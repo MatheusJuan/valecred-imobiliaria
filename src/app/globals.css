@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-brand: #165129;
+  --color-brand-dark: #0f3a1d;
+  --color-accent: #fcbe2b;
+  --color-accent-dark: #e5a914;
+  --color-surface: #f1f0f0;
+  --color-ink: #1f2a24;
+  --color-muted: #5f6b64;
+  --font-sans: var(--font-inter);
+
+  /* Escala de cantos: controle (botões, campos, abas) < card < painel (hero, faixas, galeria). Badges: rounded-full. */
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
+  --radius-panel: 1.5rem;
+}
+
+body {
+  background: #fff;
+  color: var(--color-ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+@layer components {
+  .container-site {
+    @apply mx-auto w-full max-w-[1160px] px-5;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-control bg-brand px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-dark;
+  }
+  .btn-accent {
+    @apply inline-flex items-center justify-center rounded-control bg-accent px-5 py-3 text-sm font-semibold text-ink transition hover:bg-accent-dark;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-control border border-brand px-5 py-3 text-sm font-semibold text-brand transition hover:bg-brand hover:text-white;
+  }
+  .section-title {
+    @apply text-center text-2xl font-bold text-ink md:text-3xl;
+  }
+  .section-sub {
+    @apply mx-auto mt-2 max-w-2xl text-center text-sm text-muted;
+  }
+  .field {
+    @apply w-full rounded-control border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand;
+  }
+}

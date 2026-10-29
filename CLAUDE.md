@@ -189,7 +189,10 @@ Admin gera QR Code para **cada imóvel** (`/imovel/[id]`) e para o **site princi
 
 ## Comandos
 
-> Preencher quando o projeto for scaffoldado: `dev`, `build`, `start`, `prisma migrate dev` / `prisma migrate deploy`, `prisma db seed` (admin).
+- `npm run dev` / `npm run build` / `npm run start` / `npm run lint` / `npx tsc --noEmit`.
+- `npm run db:migrate` (`prisma migrate dev`, com `DATABASE_URL` apontando para um Postgres local) e `npm run db:deploy` (`prisma migrate deploy`, usado na subida do container).
+- `postinstall` roda `prisma generate`. Seed do admin (`prisma db seed`) vem na fase B3.
+- Trabalho da fase B fica na branch `fase-b`; a `main` publica a demonstração do MVP na Vercel. Detalhes e pendências externas em [docs/fase-b-preparacao.md](docs/fase-b-preparacao.md).
 
 ## Pendências em aberto
 

@@ -1,0 +1,222 @@
+// Modelo de dados da ValeCred Empreendimentos Imobiliarias.
+// Espelha src/lib/types.ts (MVP) e a secao 4 do BASE-SITE-IMOBILIARIA.md.
+// Tabelas em snake_case via @@map (convencao do CLAUDE.md).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PropertyStatus {
+  VENDA
+  ALUGUEL
+  LANCAMENTO
+}
+
+enum PropertyCategory {
+  CASA
+  APARTAMENTO
+  TERRENO
+  COMERCIAL
+  CASA_CONDOMINIO
+}
+
+enum LeadType {
+  CONTATO
+  VISITA
+  INTERESSE
+}
+
+enum LeadStatus {
+  NOVO
+  CONTATADO
+  CONVERTIDO
+  ARQUIVADO
+}
+
+enum RequestState {
+  PENDENTE
+  APROVADA
+  REJEITADA
+}
+
+model Property {
+  id          String           @id @default(cuid())
+  /// Gerado por finalidade: VD0001 (venda), LC0001 (locacao), LN0001 (lancamento). Ver CodeSequence.
+  code        String           @unique
+  title       String
+  description String           @db.Text
+  /// null = "A Consultar"
+  price       Decimal?         @db.Decimal(12, 2)
+  condoFee    Decimal?         @db.Decimal(12, 2)
+  insurance   Decimal?         @db.Decimal(12, 2)
+  status      PropertyStatus
+  category    PropertyCategory
+  area        Decimal          @db.Decimal(10, 2)
+  bedrooms    Int              @default(0)
+  bathrooms   Int              @default(0)
+  parking     Int              @default(0)
+  rooms       Int?
+  floors      Int?
+  city        String
+  state       String           @default("SP") @db.VarChar(2)
+  neighborhood String
+  address     String?
+  lat         Float?
+  lng         Float?
+  /// URLs publicas no Cloudflare R2, na ordem de exibicao (a primeira e a capa)
+  images      String[]
+  features    String[]
+  /// URL de incorporacao (YouTube/Vimeo)
+  videoUrl    String?
+  featured    Boolean          @default(false)
+  /// Privado: nunca aparece no site publico nem gera QR Code
+  isPrivate   Boolean          @default(false)
+  seoTitle    String?
+  seoDescription String?
+  agentId     String?
+  agent       Agent?           @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  floorPlans  FloorPlan[]
+  leads       Lead[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([status, isPrivate])
+  @@index([city])
+  @@index([featured])
+  @@map("properties")
+}
+
+model FloorPlan {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name        String
+  area        Decimal  @db.Decimal(10, 2)
+  bedrooms    Int      @default(0)
+  bathrooms   Int      @default(0)
+  image       String
+  description String?
+  position    Int      @default(0)
+
+  @@index([propertyId])
+  @@map("floor_plans")
+}
+
+model Agent {
+  id         String     @id @default(cuid())
+  name       String
+  creci      String?
+  phone      String
+  whatsapp   String?
+  photo      String?
+  active     Boolean    @default(true)
+  properties Property[]
+
+  @@map("agents")
+}
+
+/// Dados pessoais (LGPD): definir prazo de retencao e rotina de exclusao antes do lancamento.
+model Lead {
+  id            String     @id @default(cuid())
+  type          LeadType
+  name          String
+  phone         String
+  email         String?
+  message       String?    @db.Text
+  preferredDate DateTime?
+  propertyId    String?
+  property      Property?  @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  status        LeadStatus @default(NOVO)
+  createdAt     DateTime   @default(now())
+
+  @@index([status, createdAt])
+  @@index([propertyId])
+  @@map("property_leads")
+}
+
+/// Pedido enviado por proprietario na pagina "Anuncie seu imovel". Aprovar cria um Property.
+model AdvertiseRequest {
+  id                 String           @id @default(cuid())
+  name               String
+  phone              String
+  email              String?
+  status             PropertyStatus
+  category           PropertyCategory
+  city               String
+  neighborhood       String
+  address            String?
+  price              Decimal?         @db.Decimal(12, 2)
+  area               Decimal?         @db.Decimal(10, 2)
+  description        String?          @db.Text
+  images             String[]
+  state              RequestState     @default(PENDENTE)
+  approvedPropertyId String?
+  createdAt          DateTime         @default(now())
+
+  @@index([state, createdAt])
+  @@map("advertise_requests")
+}
+
+model BlogPost {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  title          String
+  excerpt        String
+  /// Texto puro, paragrafos separados por linha em branco (sem markdown)
+  content        String    @db.Text
+  image          String?
+  seoTitle       String?
+  seoDescription String?
+  /// null = rascunho
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([publishedAt])
+  @@map("blog_articles")
+}
+
+model HomeBanner {
+  id          String  @id @default(cuid())
+  title       String
+  subtitle    String?
+  buttonLabel String?
+  link        String?
+  image       String
+  active      Boolean @default(true)
+  position    Int     @default(0)
+
+  @@map("home_banners")
+}
+
+/// Chave/valor em grupos: contato, identidade, SEO, analytics e flags das secoes da home.
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+/// Admin unico. Sessao em cookie assinado (sem tabela de sessoes). Criado por seed/script, sem cadastro publico.
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("admin_users")
+}
+
+/// Contador por prefixo (VD, LC, LN) para gerar o codigo do imovel dentro de uma transacao.
+model CodeSequence {
+  prefix String @id @db.VarChar(4)
+  last   Int    @default(0)
+
+  @@map("code_sequences")
+}
